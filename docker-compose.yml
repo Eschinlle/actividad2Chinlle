@@ -18,14 +18,20 @@ services:
       - "3306:3306"
     networks:
       - fintech-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fintech_user", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Servicio de backend
+  # Servicio de backend con Node.js y Express
   backend:
     build: ./backend
     container_name: fintech-backend
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       PORT: 3000
       DB_HOST: db
@@ -37,7 +43,7 @@ services:
     networks:
       - fintech-network
 
-  # Servicio de frontend
+  # Servicio de frontend con Nginx
   frontend:
     build: ./frontend
     container_name: fintech-frontend
@@ -49,9 +55,13 @@ services:
     networks:
       - fintech-network
 
+# Definición de la red para comunicación entre contenedores
 networks:
   fintech-network:
     driver: bridge
 
+# Definición del volumen para persistencia de datos
 volumes:
   mysql-data:
+    # Usar un nombre específico para garantizar su persistencia
+    name: fintech-mysql-data
