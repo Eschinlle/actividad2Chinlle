@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTech Solutions - Gestión Financiera</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-wallet"></i>
+            <h1>FinTech Solutions</h1>
+        </div>
+        <div class="balance-summary">
+            <div class="balance-item positive">
+                <span>Ingresos</span>
+                <span id="total-income">€0.00</span>
+            </div>
+            <div class="balance-item negative">
+                <span>Gastos</span>
+                <span id="total-expenses">€0.00</span>
+            </div>
+            <div class="balance-item total">
+                <span>Balance</span>
+                <span id="total-balance">€0.00</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="transaction-form-section">
+            <h2>Nueva Transacción</h2>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <input type="text" id="description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Cantidad (€)</label>
+                    <input type="number" id="amount" name="amount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Categoría</label>
+                    <select id="category" name="category" required>
+                        <option value="">Selecciona una categoría</option>
+                        <option value="Salario">Salario</option>
+                        <option value="Ingreso extra">Ingreso extra</option>
+                        <option value="Alimentación">Alimentación</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Vivienda">Vivienda</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Ocio">Ocio</option>
+                        <option value="Salud">Salud</option>
+                        <option value="Educación">Educación</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <div class="radio-group">
+                        <label for="income">
+                            <input type="radio" id="income" name="transaction_type" value="income" required>
+                            Ingreso
+                        </label>
+                        <label for="expense">
+                            <input type="radio" id="expense" name="transaction_type" value="expense" required>
+                            Gasto
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </form>
+        </section>
+
+        <section class="transactions-section">
+            <div class="section-header">
+                <h2>Transacciones Recientes</h2>
+                <button id="refresh-btn" class="btn-refresh">
+                    <i class="fas fa-sync"></i> Actualizar
+                </button>
+            </div>
+            <div class="transactions-list" id="transactions-list">
+                <div class="loading">Cargando transacciones...</div>
+            </div>
+        </section>
+
+        <section class="charts-section">
+            <h2>Resumen por Categorías</h2>
+            <div class="charts-container">
+                <div class="chart-wrapper">
+                    <h3>Gastos por Categoría</h3>
+                    <canvas id="expenses-chart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h3>Ingresos por Categoría</h3>
+                    <canvas id="income-chart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 FinTech Solutions S.A. - Aplicación Demo Docker</p>
+    </footer>
+
+    <!-- Template para las transacciones -->
+    <template id="transaction-template">
+        <div class="transaction-item">
+            <div class="transaction-info">
+                <div class="transaction-primary">
+                    <span class="transaction-description"></span>
+                    <span class="transaction-amount"></span>
+                </div>
+                <div class="transaction-secondary">
+                    <span class="transaction-category"></span>
+                    <span class="transaction-date"></span>
+                </div>
+            </div>
+            <div class="transaction-actions">
+                <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                <button class="btn-delete"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    </template>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Editar Transacción</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label for="edit-description">Descripción</label>
+                    <input type="text" id="edit-description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-amount">Cantidad (€)</label>
+                    <input type="number" id="edit-amount" name="amount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-category">Categoría</label>
+                    <select id="edit-category" name="category" required>
+                        <option value="">Selecciona una categoría</option>
+                        <option value="Salario">Salario</option>
+                        <option value="Ingreso extra">Ingreso extra</option>
+                        <option value="Alimentación">Alimentación</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Vivienda">Vivienda</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Ocio">Ocio</option>
+                        <option value="Salud">Salud</option>
+                        <option value="Educación">Educación</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <div class="radio-group">
+                        <label for="edit-income">
+                            <input type="radio" id="edit-income" name="transaction_type" value="income" required>
+                            Ingreso
+                        </label>
+                        <label for="edit-expense">
+                            <input type="radio" id="edit-expense" name="transaction_type" value="expense" required>
+                            Gasto
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Actualizar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
