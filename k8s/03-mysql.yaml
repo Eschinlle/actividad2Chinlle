@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: fintech-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-script
+  namespace: fintech-app
+data:
+  init.sql: |
+    -- Crear la base de datos si no existe
+    CREATE DATABASE IF NOT EXISTS fintech_db;
+    USE fintech_db;
+
+    -- Crear la tabla de transacciones
+    CREATE TABLE IF NOT EXISTS transactions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      description VARCHAR(255) NOT NULL,
+      amount DECIMAL(10, 2) NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      transaction_type ENUM('income', 'expense') NOT NULL
+    );
+
+    -- Insertar algunos datos de ejemplo
+    INSERT INTO transactions (description, amount, category, transaction_type) VALUES
+    ('Salario de febrero', 1500.00, 'Salario', 'income'),
+    ('Compra supermercado', 120.50, 'Alimentación', 'expense'),
+    ('Factura electricidad', 85.30, 'Servicios', 'expense'),
+    ('Trabajo freelance', 350.00, 'Ingreso extra', 'income'),
+    ('Restaurante', 45.60, 'Ocio', 'expense'),
+    ('Transporte público', 30.00, 'Transporte', 'expense');
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: fintech-app
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-root-password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-database
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      - name: mysql-init
+        configMap:
+          name: mysql-init-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: fintech-app
+spec:
+  selector:
+    app: mysql
+  ports:
+  - port: 3306
+    targetPort: 3306
+    protocol: TCP
