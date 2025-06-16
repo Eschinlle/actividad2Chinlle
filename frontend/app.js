@@ -1,5 +1,5 @@
 // Configuración de la API
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 // Referencias DOM
 const transactionForm = document.getElementById('transaction-form');
